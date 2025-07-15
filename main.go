@@ -3,24 +3,34 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
-	"os"
+	"net"
 	"strings"
 )
 
 func main() {
-	file, err := os.Open("./m.txt")
+	//  go run . | tee /tmp/tcp.txt
+	//  printf "好き" | nc -c -w 1 127.0.0.1 42069
+
+	l, err := net.Listen("tcp", ":42069")
 	if err != nil {
-		log.Fatal("Could not read file")
+		panic("悲しい")
+	}
+	defer l.Close()
+
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println("またね")
+		}
+
+		fmt.Println("A new friend has joined, going to print his messages")
+		channelString := getLinesChannel(conn)
+		for line := range channelString {
+			fmt.Print(line)
+		}
+
 	}
 
-	channelString := getLinesChannel(file)
-	for line := range channelString {
-		fmt.Print(line)
-	}
-
-	fmt.Println("---")
-	fmt.Println("バイバイ")
 }
 
 func getLinesChannel(f io.ReadCloser) <-chan string {
