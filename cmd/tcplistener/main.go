@@ -2,15 +2,12 @@ package main
 
 import (
 	"fmt"
-	"io"
+	"github.com/brayanMuniz/tcp-to-https/internal/request"
+	"log"
 	"net"
-	"strings"
 )
 
 func main() {
-	//  go run ./cmd/tcplistner | tee /tmp/tcp.txt
-	//  printf "好き" | nc -c -w 1 127.0.0.1 42069
-
 	l, err := net.Listen("tcp", ":42069")
 	if err != nil {
 		panic("悲しい")
@@ -24,44 +21,14 @@ func main() {
 		}
 
 		fmt.Println("A new friend has joined, going to print his messages")
-		channelString := getLinesChannel(conn)
-		for line := range channelString {
-			fmt.Print(line)
+		req, err := request.RequestFromReader(conn)
+		if err != nil {
+			log.Println(err)
 		}
 
+		fmt.Println("HTTP Version: ", req.RequestLine.HttpVersion)
+		fmt.Println("Method: ", req.RequestLine.Method)
+		fmt.Println("Target: ", req.RequestLine.RequestTarget)
 	}
 
-}
-
-func getLinesChannel(f io.ReadCloser) <-chan string {
-	lineChannel := make(chan string)
-
-	go func() {
-		line := ""
-		buffer := make([]byte, 8)
-		for {
-			amountRead, err := f.Read(buffer)
-			if err == io.EOF {
-				if line != "" {
-					lineChannel <- line
-				}
-				close(lineChannel)
-				f.Close()
-				return
-			}
-
-			str := string(buffer[:amountRead])
-			newline := strings.Index(str, "\n")
-			if newline != -1 {
-				line += str[0:newline]
-				lineChannel <- line
-
-				line = str[newline:len(str)]
-			} else {
-				line += str
-			}
-		}
-	}()
-
-	return lineChannel
 }
