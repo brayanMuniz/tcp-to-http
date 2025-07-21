@@ -1,9 +1,12 @@
 package request
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/brayanMuniz/tcp-to-https/internal/headers"
 )
 
 const bufferSize = 8
@@ -12,12 +15,14 @@ const rn = "\r\n"
 type State int
 
 const (
-	initialized State = iota
-	done
+	parsingRequestLine State = iota
+	parsingHeaders
+	parsingDone
 )
 
 type Request struct {
 	RequestLine  RequestLine
+	Headers      headers.Headers
 	CurrentState State
 }
 
@@ -29,12 +34,13 @@ type RequestLine struct {
 
 func RequestFromReader(reader io.Reader) (*Request, error) {
 	var request Request
-	request.CurrentState = initialized
+	request.Headers = headers.NewHeaders()
+	request.CurrentState = parsingRequestLine
 
 	readToIdx := 0
 	buffer := make([]byte, bufferSize, bufferSize)
 
-	for request.CurrentState != done {
+	for request.CurrentState != parsingDone {
 
 		// increase buffer if it exceeded original size
 		for readToIdx >= len(buffer) {
@@ -46,7 +52,7 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 		amountRead, err := reader.Read(buffer[readToIdx:])
 		if err != nil {
 			if err == io.EOF {
-				if request.CurrentState != done {
+				if request.CurrentState != parsingDone {
 					return nil, fmt.Errorf("reached end while not done")
 				}
 			}
@@ -68,45 +74,82 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 }
 
 func (r *Request) parse(data []byte) (int, error) {
-	bytesParsed, err := r.parseLine(data)
-	if err != nil {
-		return 0, err
+	bytesParsed := 0
+	for r.CurrentState != parsingDone {
+		amountParsed, err := r.parseLine(data[bytesParsed:])
+		if err != nil {
+			return 0, err
+		}
+
+		bytesParsed += amountParsed
+		if amountParsed == 0 {
+			break
+		}
+
 	}
 
 	return bytesParsed, nil
 }
 
-// if there is a line parse it and return the amount parsed
-// if need more data to parse a line return 0, nil
-func (r *Request) parseLine(data []byte) (int, error) {
-
-	rnIdx := strings.Index(string(data), rn)
-	if rnIdx != -1 {
-		requestLine, amountParsed, err := parseRequestLine(data[:rnIdx])
+func (r *Request) parseLine(data []byte) (amountParsed int, err error) {
+	switch r.CurrentState {
+	case parsingRequestLine:
+		requestLine, amountParsed, err := parseRequestLine(data)
 		if err != nil {
 			return 0, err
 		}
 
+		// need more data
+		if amountParsed == 0 {
+			return 0, nil
+		}
+
 		r.RequestLine = *requestLine
-		r.CurrentState = done // for now since testing just the request line this works
+		r.CurrentState = parsingHeaders
 
 		return amountParsed, nil
+
+	case parsingHeaders:
+		bytesConsumed, finishedParsing, err := r.Headers.Parse(data)
+		if err != nil {
+			return 0, err
+		}
+
+		if finishedParsing {
+			r.CurrentState = parsingDone
+		}
+
+		// need more data
+		if bytesConsumed == 0 && !finishedParsing {
+			return 0, nil
+		}
+
+		return bytesConsumed, nil
 	}
 
 	return 0, nil
 }
 
-func parseRequestLine(requestLineBytes []byte) (*RequestLine, int, error) {
-	var requestLine RequestLine
-
-	requestLineString := string(requestLineBytes)
-	if strings.Contains(requestLineString, rn) {
+func parseRequestLine(data []byte) (*RequestLine, int, error) {
+	rnIdx := bytes.Index(data, []byte(rn))
+	if rnIdx == -1 {
 		return nil, 0, nil
 	}
 
+	requestString := string(data[:rnIdx])
+	requestLine, err := requestLineFromString(requestString)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return requestLine, len(requestString) + len(rn), nil
+}
+
+func requestLineFromString(requestLineString string) (*RequestLine, error) {
+	var requestLine RequestLine
 	parts := strings.Split(requestLineString, " ")
 	if len(parts) < 3 {
-		return nil, len(requestLineString), fmt.Errorf("Not enough parts in the request line")
+		return nil, fmt.Errorf("Not enough parts in the request line")
 	}
 
 	httpMethod := parts[0]
@@ -118,12 +161,12 @@ func parseRequestLine(requestLineBytes []byte) (*RequestLine, int, error) {
 		}
 	}
 	if !isMethodValid {
-		return nil, len(requestLineString), fmt.Errorf("not a valid method")
+		return nil, fmt.Errorf("not a valid method")
 	}
 
 	versionSlashIdx := strings.Index(parts[2], "/")
 	if versionSlashIdx == -1 {
-		return nil, len(requestLineString), fmt.Errorf("/ not found in http version")
+		return nil, fmt.Errorf("/ not found in http version")
 	}
 	httpVersion := parts[2][versionSlashIdx+1 : len(parts[2])]
 
@@ -131,5 +174,6 @@ func parseRequestLine(requestLineBytes []byte) (*RequestLine, int, error) {
 	requestLine.HttpVersion = httpVersion
 	requestLine.RequestTarget = parts[1]
 
-	return &requestLine, len(requestLineString), nil
+	return &requestLine, nil
+
 }

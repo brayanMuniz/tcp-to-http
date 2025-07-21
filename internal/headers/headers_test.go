@@ -42,6 +42,20 @@ func TestHeadersParse(t *testing.T) {
 	assert.Equal(t, "forSure", headers["anime"])
 	assert.False(t, done)
 
+	// Valid same key multiple values
+	headers = NewHeaders()
+	data = []byte("Anime: onimai\r\n Anime: friren\r\n\r\n")
+	n, done, err = headers.Parse(data)
+	require.NoError(t, err)
+	require.NotNil(t, headers)
+	assert.Equal(t, 15, n)
+	assert.Equal(t, "onimai", headers["anime"])
+
+	n, done, err = headers.Parse(data[n:]) // continue to where it left off
+	assert.Equal(t, 16, n)
+	assert.Equal(t, "onimai, friren", headers["anime"])
+	assert.False(t, done)
+
 	// Invalid key
 	headers = NewHeaders()
 	data = []byte("H@st: localhost:42069\r\n\r\n")
@@ -57,5 +71,4 @@ func TestHeadersParse(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, 0, n)
 	assert.False(t, done)
-
 }
