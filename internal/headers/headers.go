@@ -3,7 +3,6 @@ package headers
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"strings"
 	"unicode"
 )
@@ -46,8 +45,6 @@ func (h Headers) Parse(data []byte) (bytesCounsumed int, finishedParsing bool, e
 	headerKey := strings.TrimSpace(newHeader[:colonIdx])
 	headerValue := strings.TrimSpace(newHeader[colonIdx+1:])
 
-	fmt.Println(headerKey, headerValue)
-
 	// Check if key is valid
 	for _, c := range headerKey {
 		if unicode.IsLetter(c) || unicode.IsDigit(c) {
@@ -69,14 +66,26 @@ func (h Headers) Parse(data []byte) (bytesCounsumed int, finishedParsing bool, e
 
 	}
 
-	headerKey = strings.ToLower(headerKey)
-
-	// append and seperate with a comma if it exist
-	if val, ok := h[headerKey]; ok {
-		h[headerKey] = val + ", " + headerValue
-	} else {
-		h[headerKey] = headerValue
-	}
+	h.Set(headerKey, headerValue)
 
 	return rnIdx + len(rn), false, nil
+}
+
+func (h Headers) GetValue(key string) (string, bool) {
+	value, ok := h[strings.ToLower(key)]
+	if !ok {
+		return "", false
+	}
+	return value, ok
+}
+
+// append and seperate with a comma if it exist
+func (h Headers) Set(key string, value string) {
+	key = strings.ToLower(key)
+
+	if val, ok := h[key]; ok {
+		h[key] = val + ", " + value
+	} else {
+		h[key] = value
+	}
 }

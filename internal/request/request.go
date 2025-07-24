@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/brayanMuniz/tcp-to-https/internal/headers"
@@ -17,12 +18,15 @@ type State int
 const (
 	parsingRequestLine State = iota
 	parsingHeaders
+	parsingBody
 	parsingDone
 )
 
 type Request struct {
 	RequestLine  RequestLine
 	Headers      headers.Headers
+	Body         []byte
+	bodyRead     int // this is to keep asking for more data while we read the body
 	CurrentState State
 }
 
@@ -107,7 +111,7 @@ func (r *Request) parseLine(data []byte) (amountParsed int, err error) {
 		r.RequestLine = *requestLine
 		r.CurrentState = parsingHeaders
 
-		return amountParsed, nil
+		return amountParsed + len(rn), nil
 
 	case parsingHeaders:
 		bytesConsumed, finishedParsing, err := r.Headers.Parse(data)
@@ -116,15 +120,43 @@ func (r *Request) parseLine(data []byte) (amountParsed int, err error) {
 		}
 
 		if finishedParsing {
-			r.CurrentState = parsingDone
+			r.CurrentState = parsingBody
+			return bytesConsumed + len(rn), nil
 		}
 
 		// need more data
-		if bytesConsumed == 0 && !finishedParsing {
+		if bytesConsumed == 0 {
 			return 0, nil
 		}
 
 		return bytesConsumed, nil
+
+	case parsingBody:
+		l, ok := r.Headers.GetValue("Content-Length")
+
+		// no content length provided, assuming done state
+		if !ok {
+			r.CurrentState = parsingDone
+			return len(data), nil
+		}
+
+		cLength, err := strconv.Atoi(l)
+		if err != nil {
+			return 0, fmt.Errorf("content length value is not a number")
+		}
+
+		r.Body = append(r.Body, data...)
+		r.bodyRead += len(data)
+
+		if r.bodyRead > cLength {
+			return 0, fmt.Errorf("data is more than content length")
+		}
+
+		if r.bodyRead == cLength {
+			r.CurrentState = parsingDone
+		}
+
+		return len(data), nil
 	}
 
 	return 0, nil
@@ -142,7 +174,7 @@ func parseRequestLine(data []byte) (*RequestLine, int, error) {
 		return nil, 0, err
 	}
 
-	return requestLine, len(requestString) + len(rn), nil
+	return requestLine, len(requestString), nil
 }
 
 func requestLineFromString(requestLineString string) (*RequestLine, error) {
