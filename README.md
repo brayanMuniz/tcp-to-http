@@ -2,7 +2,7 @@
 
 An implementation of HTTP from TCP
 
-[demo video](./demo.gif) 
+![demo](./demo.gif)
 
 ## Overview
 Raw TCP. No [net/http](https://pkg.go.dev/net/http) package. Uses a finite state machine approach in order to validate the protocol from incoming TCP packets. 
