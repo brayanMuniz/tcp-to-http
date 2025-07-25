@@ -89,3 +89,15 @@ func (h Headers) Set(key string, value string) {
 		h[key] = value
 	}
 }
+
+func (h Headers) Remove(key string) {
+	key = strings.ToLower(key)
+	if _, exist := h[key]; exist {
+		delete(h, key)
+	}
+}
+
+func (h Headers) Override(key string, value string) {
+	key = strings.ToLower(key)
+	h[key] = value
+}

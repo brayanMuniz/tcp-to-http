@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"sync/atomic"
 
@@ -66,6 +67,7 @@ func (s *Server) handle(conn net.Conn) {
 	req, err := request.RequestFromReader(conn)
 	if err != nil {
 		w.WriteStatusLine(response.BAD_REQUEST)
+		log.Println("Error reading the request", err)
 		body := []byte("Bad request fam")
 		defaultHeaders := response.GetDefaultHeaders(len(body))
 		w.WriteHeaders(defaultHeaders)
