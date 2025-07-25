@@ -11,17 +11,14 @@ const (
 )
 
 func getStatusLine(statusCode StatusCode) []byte {
-	message := ""
+	reasonPhrase := ""
 	switch statusCode {
 	case OK:
-		message = "200 OK"
+		reasonPhrase = "OK"
 	case BAD_REQUEST:
-		message = "400 BAD REQUEST"
+		reasonPhrase = "Bad Request"
 	case INTERNAL_SERVER_ERROR:
-		message = "500 INTERNAL SERVER ERROR"
+		reasonPhrase = "Internal Server Error"
 	}
-
-	return []byte(fmt.Sprintf("HTTP/1.1 %s", message))
-
+	return []byte(fmt.Sprintf("HTTP/1.1 %d %s\r\n", statusCode, reasonPhrase))
 }
-

@@ -36,9 +36,7 @@ func (w *Writer) WriteStatusLine(s StatusCode) error {
 	}
 	defer func() { w.writerState = stateHeaders }()
 
-	statusLine := getStatusLine(s)
-	_, err := w.writer.Write([]byte(fmt.Sprintf("%s%s\r\n", statusLine, rn)))
-
+	_, err := w.writer.Write(getStatusLine(s))
 	return err
 }
 
@@ -66,9 +64,5 @@ func (w *Writer) WriteBody(body []byte) error {
 	defer func() { w.writerState = stateDoneWriting }()
 
 	_, err := w.writer.Write(body)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }

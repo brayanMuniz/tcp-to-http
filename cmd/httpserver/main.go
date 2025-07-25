@@ -44,28 +44,29 @@ func handler(w *response.Writer, req *request.Request) {
 
 func handler200(w *response.Writer, _ *request.Request) {
 	w.WriteStatusLine(response.OK)
-	body := []byte(`
-	<html>
-	  <head>
-	    <title>200 OK</title>
-	  </head>
-	  <body>
-	    <h1>Success!</h1>
-	    <p>Your request was an absolute banger.</p>
-	  </body>
-	</html>
-	`)
+
+	body := []byte(`<html>
+<head>
+<title>200 OK</title>
+</head>
+<body>
+<h1>Success!</h1>
+<p>Your request was an absolute banger.</p>
+</body>
+</html>
+`)
 
 	h := response.GetDefaultHeaders(len(body))
 	h.Override("Content-Type", "text/html")
 	w.WriteHeaders(h)
-
 	w.WriteBody(body)
+
 	return
 }
 
 func handler400(w *response.Writer, _ *request.Request) {
 	w.WriteStatusLine(response.BAD_REQUEST)
+
 	body := []byte(`
 	<html>
 	  <head>
@@ -81,7 +82,6 @@ func handler400(w *response.Writer, _ *request.Request) {
 	h := response.GetDefaultHeaders(len(body))
 	h.Override("Content-Type", "text/html")
 	w.WriteHeaders(h)
-
 	w.WriteBody(body)
 
 	return
@@ -89,6 +89,7 @@ func handler400(w *response.Writer, _ *request.Request) {
 
 func handler500(w *response.Writer, _ *request.Request) {
 	w.WriteStatusLine(response.INTERNAL_SERVER_ERROR)
+
 	body := []byte(`
 	<html>
 	  <head>
@@ -102,9 +103,9 @@ func handler500(w *response.Writer, _ *request.Request) {
 	`)
 
 	h := response.GetDefaultHeaders(len(body))
-	w.WriteHeaders(h)
 	h.Override("Content-Type", "text/html")
-
+	w.WriteHeaders(h)
 	w.WriteBody(body)
+
 	return
 }

@@ -7,7 +7,6 @@ import (
 	"unicode"
 )
 
-// NOTE: \r and \n is each one byte
 const rn = "\r\n"
 
 type Headers map[string]string
@@ -32,14 +31,13 @@ func (h Headers) Parse(data []byte) (bytesCounsumed int, finishedParsing bool, e
 	dataString := string(data)
 	newHeader := strings.TrimSpace(dataString[:rnIdx])
 
-	parts := strings.Split(newHeader, " ")
-	if len(parts) < 2 || len(parts) > 2 {
-		return 0, false, fmt.Errorf("Too many parts in header")
-	}
-
 	colonIdx := strings.Index(newHeader, ":")
 	if colonIdx == -1 {
 		return 0, false, fmt.Errorf("Missing colon")
+	}
+
+	if strings.Contains(newHeader[:colonIdx], " ") {
+		return 0, false, fmt.Errorf("space after key")
 	}
 
 	headerKey := strings.TrimSpace(newHeader[:colonIdx])
