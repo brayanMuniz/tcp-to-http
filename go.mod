@@ -1,4 +1,4 @@
-module github.com/brayanMuniz/tcp-to-https
+module github.com/brayanMuniz/tcp-to-http
 
 go 1.23.4
 

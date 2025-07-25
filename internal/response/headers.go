@@ -3,7 +3,7 @@ package response
 import (
 	"fmt"
 
-	"github.com/brayanMuniz/tcp-to-https/internal/headers"
+	"github.com/brayanMuniz/tcp-to-http/internal/headers"
 )
 
 func GetDefaultHeaders(contentLen int) headers.Headers {

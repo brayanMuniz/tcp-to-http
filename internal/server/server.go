@@ -6,8 +6,8 @@ import (
 	"net"
 	"sync/atomic"
 
-	"github.com/brayanMuniz/tcp-to-https/internal/request"
-	"github.com/brayanMuniz/tcp-to-https/internal/response"
+	"github.com/brayanMuniz/tcp-to-http/internal/request"
+	"github.com/brayanMuniz/tcp-to-http/internal/response"
 )
 
 type HandlerError struct {

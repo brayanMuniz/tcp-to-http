@@ -6,9 +6,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/brayanMuniz/tcp-to-https/internal/request"
-	"github.com/brayanMuniz/tcp-to-https/internal/response"
-	"github.com/brayanMuniz/tcp-to-https/internal/server"
+	"github.com/brayanMuniz/tcp-to-http/internal/request"
+	"github.com/brayanMuniz/tcp-to-http/internal/response"
+	"github.com/brayanMuniz/tcp-to-http/internal/server"
 )
 
 const port = 42069
@@ -51,7 +51,7 @@ func handler200(w *response.Writer, _ *request.Request) {
 </head>
 <body>
 <h1>Success!</h1>
-<p>Your request was an absolute banger.</p>
+<p>すごい！</p>
 </body>
 </html>
 `)
@@ -74,7 +74,7 @@ func handler400(w *response.Writer, _ *request.Request) {
 	  </head>
 	  <body>
 	    <h1>Bad Request</h1>
-	    <p>Your request honestly kinda sucked.</p>
+	    <p>にがい</p>
 	  </body>
 	</html>
 	`)
@@ -97,7 +97,7 @@ func handler500(w *response.Writer, _ *request.Request) {
 	  </head>
 	  <body>
 	    <h1>Internal Server Error</h1>
-	    <p>Okay, you know what? This one is on me.</p>
+	    <p>すいません</p>
 	  </body>
 	</html>
 	`)

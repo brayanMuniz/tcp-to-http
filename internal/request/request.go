@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/brayanMuniz/tcp-to-https/internal/headers"
+	"github.com/brayanMuniz/tcp-to-http/internal/headers"
 )
 
 const bufferSize = 8
